@@ -98,11 +98,11 @@ final class HorizonStabilizer: ObservableObject {
     private func updateFilterConfig() {
         // 强度影响截止频率: 高强度 = 更低的截止频率 = 更平滑
         // 映射: strength 0→1 映射到 cutoff 5.0→0.5 Hz
-        let cutoffHz = 5.0 - strength * 4.5  // [0.5, 5.0]
+        let cutoffHz = Double(5.0 - strength * 4.5)  // [0.5, 5.0]
 
         rollFilter.configure(cutoffHz: cutoffHz, sampleRateHz: 120.0)
         pitchFilter.configure(cutoffHz: cutoffHz, sampleRateHz: 120.0)
-        yawFilter.configure(cutoffHz: cutoffHz * 1.5, sampleRateHz: 120.0) // yaw 稍快
+        yawFilter.configure(cutoffHz: cutoffHz * 1.5, sampleRateHz: 120.0)
     }
 
     // MARK: - 每帧更新
