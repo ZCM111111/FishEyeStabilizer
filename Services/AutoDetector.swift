@@ -1,6 +1,4 @@
 import Foundation
-@preconcurrency import CoreVideo
-import Vision
 
 final class AutoDetector: ObservableObject {
     struct DetectionResult {
