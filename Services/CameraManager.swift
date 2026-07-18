@@ -20,6 +20,7 @@ import Combine
 /// // 在 delegate 回调中接收帧
 /// camera.stopSession()
 /// ```
+@MainActor
 final class CameraManager: NSObject, ObservableObject {
 
     // MARK: - 公开属性
