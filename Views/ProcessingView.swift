@@ -1,6 +1,6 @@
 import SwiftUI
-import Photos
-import AVKit
+@preconcurrency import Photos
+@preconcurrency import AVKit
 
 // MARK: - 视频处理视图
 

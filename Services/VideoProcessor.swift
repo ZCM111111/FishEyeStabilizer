@@ -1,5 +1,5 @@
-import AVFoundation
-import CoreImage
+@preconcurrency import AVFoundation
+@preconcurrency import CoreImage
 import Combine
 
 // MARK: - 离线视频处理器

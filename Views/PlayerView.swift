@@ -1,5 +1,5 @@
 import SwiftUI
-import AVKit
+@preconcurrency import AVKit
 
 // MARK: - 视频播放视图
 

@@ -1,5 +1,5 @@
-import MetalKit
-import CoreVideo
+@preconcurrency import MetalKit
+@preconcurrency import CoreVideo
 
 // MARK: - Metal 渲染器
 

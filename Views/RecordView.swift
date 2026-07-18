@@ -1,5 +1,5 @@
 import SwiftUI
-import MetalKit
+@preconcurrency import MetalKit
 
 // MARK: - 拍摄视图
 

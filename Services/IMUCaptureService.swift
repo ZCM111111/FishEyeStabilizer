@@ -1,4 +1,4 @@
-import CoreMotion
+@preconcurrency import CoreMotion
 import Foundation
 
 // MARK: - IMU 采集服务
@@ -59,9 +59,10 @@ final class IMUCaptureService: ObservableObject {
 
             self.latestData = dataPoint
 
-            // buffer 是 actor，需要异步写入
-            Task.detached { [dataPoint] in
-                await self.buffer.append(dataPoint)
+            // buffer 是 actor，捕获引用后异步写入
+            let buf = self.buffer
+            Task.detached { [dataPoint, buf] in
+                await buf.append(dataPoint)
             }
         }
 
