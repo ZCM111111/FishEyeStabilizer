@@ -225,9 +225,9 @@ final class CameraViewModel: ObservableObject {
 
 // MARK: - CameraFrameDelegate
 
-extension CameraViewModel: CameraFrameDelegate {
+extension CameraViewModel: @preconcurrency CameraFrameDelegate {
 
-    nonisolated func cameraManager(
+    func cameraManager(
         _ manager: CameraManager,
         didOutputPixelBuffer pixelBuffer: CVPixelBuffer,
         timestamp: CMTime
