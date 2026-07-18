@@ -22,7 +22,7 @@ final class MetalRenderer: NSObject, ObservableObject {
 
     private let device: MTLDevice
     private let commandQueue: MTLCommandQueue
-    private let library: MTLLibrary
+    private var _library: MTLLibrary?
 
     /// 鱼眼矫正 compute pipeline state
     private var fisheyePipeline: MTLComputePipelineState?
@@ -60,25 +60,31 @@ final class MetalRenderer: NSObject, ObservableObject {
 
     private var textureCacheCreated = false
 
+    private var library: MTLLibrary { _library! }
+
     override init() {
         guard let d = MTLCreateSystemDefaultDevice(),
-              let q = d.makeCommandQueue(),
-              let lib = d.makeDefaultLibrary() else {
+              let q = d.makeCommandQueue() else {
             self.device = MTLCreateSystemDefaultDevice()!
             self.commandQueue = (MTLCreateSystemDefaultDevice()?.makeCommandQueue())!
-            self.library = (MTLCreateSystemDefaultDevice()?.makeDefaultLibrary())!
             super.init()
             return
         }
         self.device = d
         self.commandQueue = q
-        self.library = lib
         super.init()
+    }
+
+    private func ensureLibrary() -> Bool {
+        if _library != nil { return true }
+        _library = device.makeDefaultLibrary()
+        return _library != nil
     }
 
     // MARK: - 着色器管线设置
 
     private func setupPipelines() {
+        guard ensureLibrary() else { return }
         // --- 鱼眼矫正 Compute Pipeline ---
         if let fisheyeFunction = library.makeFunction(name: "fisheyeCorrectYUVtoRGBA") {
             do {
