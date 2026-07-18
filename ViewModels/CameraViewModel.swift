@@ -252,9 +252,9 @@ extension CameraViewModel: @preconcurrency CameraFrameDelegate {
         // Metal 渲染提交（异步，立即返回 — 不再阻塞）
         renderer.render(pixelBuffer: pixelBuffer, into: nil)
 
-        // IMU 防抖更新在后台 Task 执行，不再每帧轰炸 MainActor
+        // IMU 防抖更新在后台 Task 执行（中等优先级，不抢占 UI）
         let stabilizer = horizonStabilizer
-        Task.detached(priority: .high) {
+        Task.detached(priority: .medium) {
             await stabilizer.updateForFrame(timestamp: timestamp.seconds)
         }
     }

@@ -18,7 +18,9 @@ final class CameraManager: NSObject, ObservableObject {
     var targetFrameRate: Int32 = 60
     private var cancellables = Set<AnyCancellable>()
 
-    private let frameQueue = DispatchQueue(label: "com.fisheye.frames", qos: .userInteractive)
+    /// 帧回调队列 — 使用 .utility 而非 .userInteractive，避免 Metal shader 编译
+    /// 和信号量等待抢占主线程 CPU 时间，导致 UI 卡死
+    private let frameQueue = DispatchQueue(label: "com.fisheye.frames", qos: .utility)
 
     /// 相机配置和启停的专用后台串行队列
     /// AVCaptureSession.startRunning() 是同步阻塞调用，绝对不能在主线程执行

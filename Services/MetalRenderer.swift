@@ -70,6 +70,9 @@ final class MetalRenderer: NSObject, ObservableObject {
 
     // MARK: - 初始化
 
+    /// 管线是否已编译完成
+    private var pipelinesReady = false
+
     private var textureCacheCreated = false
 
     private var library: MTLLibrary { _library! }
@@ -85,6 +88,27 @@ final class MetalRenderer: NSObject, ObservableObject {
         self.device = d
         self.commandQueue = q
         super.init()
+        // 在后台预编译 Metal 管线，避免首帧阻塞 frameQueue
+        prewarmPipelines()
+    }
+
+    /// 在后台线程预编译 Metal shader 管线
+    /// makeDefaultLibrary() + makeComputePipelineState() + makeRenderPipelineState()
+    /// 在设备上可能耗时 100-500ms，绝对不能阻塞帧处理队列
+    private func prewarmPipelines() {
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            guard let self else { return }
+            guard self.ensureLibrary() else {
+                print("❌ [MetalRenderer] 无法加载 Metal 库")
+                return
+            }
+            // 触发库中所有函数的加载
+            _ = self.library.functionNames
+            // 编译管线
+            self.setupPipelines()
+            self.pipelinesReady = true
+            print("✅ [MetalRenderer] Metal 管线预编译完成")
+        }
     }
 
     private func ensureLibrary() -> Bool {
@@ -140,19 +164,17 @@ final class MetalRenderer: NSObject, ObservableObject {
     /// - Parameters:
     ///   - pixelBuffer: 输入帧（YUV 420v / NV12 格式）
     ///   - displayView: 显示目标 MTKView（可选，nil 时不绘制到屏幕）
-    /// - Returns: 处理后的 RGBA 纹理（可用于录制编码）。
-    ///   注意：防抖开启且 displayView 非 nil 时，最终结果直接渲染到 MTKView，
-    ///   返回的纹理是中间矫正结果（未经防抖处理）。
-    private var pipelinesSetup = false
-
+    /// - Returns: 处理后的 RGBA 纹理（可用于录制编码）；管线未就绪时返回 nil
     func render(
         pixelBuffer: CVPixelBuffer,
         into displayView: MTKView? = nil
     ) -> MTLTexture? {
+        // 管线尚未编译完成 → 跳过本帧处理（后台正在编译，不影响 UI）
+        guard pipelinesReady else { return nil }
+
         // 帧节流: 等待前一帧 GPU 工作完成（最多允许 3 帧并行）
         frameSemaphore.wait()
 
-        if !pipelinesSetup { setupPipelines(); pipelinesSetup = true }
         let targetView = displayView ?? self.displayView
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             frameSemaphore.signal()
