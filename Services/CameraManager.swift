@@ -18,10 +18,11 @@ final class CameraManager: NSObject, ObservableObject {
     var targetFrameRate: Int32 = 60
     private var cancellables = Set<AnyCancellable>()
 
+    private var configured = false
+
     override init() {
         self.session = AVCaptureSession()
         super.init()
-        configureSession()
     }
 
     private func configureSession() {
@@ -80,7 +81,7 @@ final class CameraManager: NSObject, ObservableObject {
         return bestFormat
     }
 
-    func startSession() { session.startRunning(); isSessionRunning = session.isRunning }
+    func startSession() { if !configured { configureSession(); configured = true }; session.startRunning(); isSessionRunning = session.isRunning }
     func stopSession() { session.stopRunning(); isSessionRunning = session.isRunning }
     func toggleCamera() {}
 }

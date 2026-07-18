@@ -94,8 +94,7 @@ final class MetalRenderer: NSObject, ObservableObject {
             &textureCache
         )
 
-        // --- 预编译着色器 ---
-        setupPipelines()
+        // 着色器延迟到首次渲染时编译
     }
 
     // MARK: - 着色器管线设置
@@ -145,10 +144,13 @@ final class MetalRenderer: NSObject, ObservableObject {
     ///   - pixelBuffer: 输入帧（YUV 420v / NV12 格式）
     ///   - displayView: 显示目标 MTKView（可选，nil 时不绘制到屏幕）
     /// - Returns: 处理后的 RGBA 纹理（可用于录制编码）
+    private var pipelinesSetup = false
+
     func render(
         pixelBuffer: CVPixelBuffer,
         into displayView: MTKView? = nil
     ) -> MTLTexture? {
+        if !pipelinesSetup { setupPipelines(); pipelinesSetup = true }
         let targetView = displayView ?? self.displayView
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             return nil

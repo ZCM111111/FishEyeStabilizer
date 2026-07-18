@@ -14,6 +14,7 @@ struct MainTabView: View {
     @StateObject private var cameraVM = CameraViewModel()
     @StateObject private var libraryVM = LibraryViewModel()
     @StateObject private var processingVM = ProcessingViewModel()
+    @State private var didLoadCamera = false
 
     @State private var selectedTab: Tab = .record
 
