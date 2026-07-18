@@ -1,5 +1,6 @@
 import SwiftUI
 import Foundation
+import UIKit
 
 // MARK: - 处理 ViewModel (stub for CI)
 
