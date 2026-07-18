@@ -26,7 +26,9 @@ workflows:
       - name: Generate Xcode project
         script: xcodegen generate
       - name: Install Metal Toolchain
-        script: xcodebuild -downloadComponent MetalToolchain
+        script: |
+          sudo xcodebuild -license accept
+          sudo xcodebuild -downloadComponent MetalToolchain
       - name: Build for simulator
         script: |
           xcodebuild build \
@@ -69,7 +71,9 @@ workflows:
 
       # --- 步骤 2: 安装 Metal Toolchain ---
       - name: Install Metal Toolchain
-        script: xcodebuild -downloadComponent MetalToolchain
+        script: |
+          sudo xcodebuild -license accept
+          sudo xcodebuild -downloadComponent MetalToolchain
 
       # --- 步骤 3: 设置版本号 ---
       - name: Set build number
@@ -121,6 +125,10 @@ workflows:
         script: |
           brew install xcodegen
           xcodegen generate
+      - name: Install Metal Toolchain
+        script: |
+          sudo xcodebuild -license accept
+          sudo xcodebuild -downloadComponent MetalToolchain
       - name: Build check
         script: |
           xcodebuild build \
