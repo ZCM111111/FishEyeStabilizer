@@ -76,7 +76,7 @@ workflows:
           xcodebuild archive \
             -project FishEyeStabilizer.xcodeproj \
             -scheme FishEyeStabilizer \
-            -archivePath build/FishEyeStabilizer.xcarchive \
+            -archivePath "$CM_BUILD_DIR/build/FishEyeStabilizer.xcarchive" \
             -destination 'generic/platform=iOS' \
             -configuration Release \
             CODE_SIGN_IDENTITY="" \
@@ -86,13 +86,13 @@ workflows:
       # --- 步骤 4: 导出未签名 IPA ---
       - name: Export unsigned IPA
         script: |
-          # 直接从 .app 打包成 .ipa（绕过签名检查）
-          mkdir -p build/ipa/Payload
-          cp -R build/FishEyeStabilizer.xcarchive/Products/Applications/FishEyeStabilizer.app build/ipa/Payload/
-          cd build/ipa
-          zip -r ../FishEyeStabilizer-unsigned.ipa Payload/
-          cd ../..
-          echo "✅ 未签名 IPA 已生成: build/FishEyeStabilizer-unsigned.ipa"
+          BUILD_DIR="$CM_BUILD_DIR/build"
+          mkdir -p "$BUILD_DIR/ipa/Payload"
+          cp -R "$BUILD_DIR/FishEyeStabilizer.xcarchive/Products/Applications/"*.app "$BUILD_DIR/ipa/Payload/"
+          cd "$BUILD_DIR/ipa"
+          zip -r "$BUILD_DIR/FishEyeStabilizer-unsigned.ipa" Payload/
+          echo "✅ 未签名 IPA: $BUILD_DIR/FishEyeStabilizer-unsigned.ipa"
+          ls -lh "$BUILD_DIR/FishEyeStabilizer-unsigned.ipa"
 
     artifacts:
       - build/FishEyeStabilizer-unsigned.ipa
