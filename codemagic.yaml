@@ -25,6 +25,8 @@ workflows:
         script: brew install xcodegen
       - name: Generate Xcode project
         script: xcodegen generate
+      - name: Install Metal Toolchain
+        script: xcodebuild -downloadComponent MetalToolchain
       - name: Build for simulator
         script: |
           xcodebuild build \
@@ -65,7 +67,11 @@ workflows:
           brew install xcodegen
           xcodegen generate
 
-      # --- 步骤 2: 设置版本号 ---
+      # --- 步骤 2: 安装 Metal Toolchain ---
+      - name: Install Metal Toolchain
+        script: xcodebuild -downloadComponent MetalToolchain
+
+      # --- 步骤 3: 设置版本号 ---
       - name: Set build number
         script: |
           agvtool new-version -all $PROJECT_BUILD_NUMBER

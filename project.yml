@@ -51,7 +51,7 @@ targets:
         PROVISIONING_PROFILE_SPECIFIER: ""
         # Metal 编译器设置
         MTL_ENABLE_DEBUG_INFO: "$(INCLUDE_DEBUG_INFORMATION_IN_METAL)"
-        MTL_COMPILER_FLAGS: "-fcikernel"
+        MTL_COMPILER_FLAGS: ""
         # Info.plist 权限配置
         INFOPLIST_KEY_NSCameraUsageDescription: "用于拍摄视频并进行实时鱼眼矫正和地平线防抖处理"
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "用于访问相册中的视频进行后期畸变矫正和防抖处理"
