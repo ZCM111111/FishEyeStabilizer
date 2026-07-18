@@ -77,7 +77,7 @@ final class ProcessingViewModel: ObservableObject {
     }
 }
 
-extension ProcessingViewModel: VideoProcessorDelegate {
+extension ProcessingViewModel: @preconcurrency VideoProcessorDelegate {
     func videoProcessor(_ processor: VideoProcessor, didUpdateProgress progress: Double) {}
     func videoProcessorDidFinish(_ processor: VideoProcessor) {}
 }

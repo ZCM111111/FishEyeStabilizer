@@ -227,7 +227,7 @@ final class CameraViewModel: ObservableObject {
 
 extension CameraViewModel: CameraFrameDelegate {
 
-    func cameraManager(
+    nonisolated func cameraManager(
         _ manager: CameraManager,
         didOutputPixelBuffer pixelBuffer: CVPixelBuffer,
         timestamp: CMTime
