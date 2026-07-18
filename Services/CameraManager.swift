@@ -48,7 +48,7 @@ final class CameraManager: NSObject, ObservableObject {
                 kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
             ]
             videoOutput.alwaysDiscardsLateVideoFrames = true
-            videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue.main)
+            // delegate set in next block
         }
         session.commitConfiguration()
     }
