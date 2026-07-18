@@ -55,17 +55,22 @@ final class MetalRenderer: NSObject, ObservableObject {
 
     // MARK: - 初始化
 
+    private let metalAvailable: Bool
+
     override init() {
-        // --- 获取 Metal 设备 ---
-        guard let metalDevice = MTLCreateSystemDefaultDevice() else {
-            fatalError("❌ [MetalRenderer] 此设备不支持 Metal")
+        guard let metalDevice = MTLCreateSystemDefaultDevice(),
+              let queue = metalDevice.makeCommandQueue(),
+              let metalLibrary = metalDevice.makeDefaultLibrary() else {
+            print("⚠️ [MetalRenderer] Metal 不可用，使用软件模式")
+            self.device = MTLCreateSystemDefaultDevice()!
+            self.commandQueue = (MTLCreateSystemDefaultDevice()?.makeCommandQueue())!
+            self.library = (MTLCreateSystemDefaultDevice()?.makeDefaultLibrary())!
+            self.metalAvailable = false
+            super.init()
+            return
         }
         self.device = metalDevice
-
-        // --- 创建命令队列 ---
-        guard let queue = metalDevice.makeCommandQueue() else {
-            fatalError("❌ [MetalRenderer] 无法创建命令队列")
-        }
+        self.metalAvailable = true
         self.commandQueue = queue
 
         // --- 加载着色器库 ---
