@@ -174,11 +174,4 @@ struct LibraryView: View {
     }
 }
 
-// MARK: - 预览
-
-#Preview {
-    LibraryView(
-        libraryVM: LibraryViewModel(),
-        processingVM: ProcessingViewModel()
-    )
-}
+// Preview omitted: CI build compat

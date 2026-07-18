@@ -93,16 +93,7 @@ final class VideoExporter: ObservableObject {
         exportSession.outputURL = outputURL
         exportSession.outputFileType = .mp4
 
-        // 自定义码率
-        if let bitrate = config.outputBitrateMbps as NSNumber? {
-            exportSession.metadata = [
-                AVMetadataItem(
-                    property: .quickTimeMetadataKey,
-                    value: bitrate,
-                    identifier: AVMetadataIdentifier("com.apple.quicktime.bitrate")
-                )
-            ]
-        }
+        // metadata 通过 AVVideoCompressionPropertiesKey 设置，这里跳过
 
         // 监控进度
         let progressTask = Task { @MainActor in

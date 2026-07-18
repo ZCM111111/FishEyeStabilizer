@@ -313,18 +313,4 @@ struct ProcessingView: View {
     }
 }
 
-// MARK: - 预览
-
-#Preview {
-    NavigationStack {
-        ProcessingView(
-            viewModel: ProcessingViewModel(),
-            sourceVideo: LibraryViewModel.VideoItem(
-                id: "test",
-                asset: PHAsset(),
-                creationDate: Date(),
-                duration: 120
-            )
-        )
-    }
-}
+// Preview disabled: PHAsset has no public init
