@@ -1,6 +1,6 @@
-import Vision
-import CoreImage
-import AVFoundation
+@preconcurrency import Vision
+@preconcurrency import CoreImage
+@preconcurrency import AVFoundation
 
 // MARK: - 自动鱼眼检测器
 

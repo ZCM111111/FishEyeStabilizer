@@ -1,5 +1,5 @@
-import AVFoundation
-import CoreVideo
+@preconcurrency import AVFoundation
+@preconcurrency import CoreVideo
 import Combine
 
 // MARK: - 相机管理器

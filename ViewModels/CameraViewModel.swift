@@ -1,7 +1,7 @@
 import SwiftUI
-import AVFoundation
+@preconcurrency import AVFoundation
 import Combine
-import Photos
+@preconcurrency import Photos
 
 // MARK: - 相机 ViewModel
 
