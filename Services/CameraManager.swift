@@ -18,6 +18,7 @@ final class CameraManager: NSObject, ObservableObject {
     var targetFrameRate: Int32 = 60
     private var cancellables = Set<AnyCancellable>()
 
+    private let frameQueue = DispatchQueue(label: "com.fisheye.frames", qos: .userInteractive)
     private var configured = false
 
     override init() {
@@ -49,7 +50,7 @@ final class CameraManager: NSObject, ObservableObject {
                 kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
             ]
             videoOutput.alwaysDiscardsLateVideoFrames = true
-            videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue.main)
+            videoOutput.setSampleBufferDelegate(self, queue: frameQueue)
         }
         session.commitConfiguration()
     }
