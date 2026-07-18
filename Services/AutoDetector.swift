@@ -74,24 +74,10 @@ final class AutoDetector: ObservableObject {
     }
 
     private func analyzeFrame(_ pixelBuffer: CVPixelBuffer) -> (k1: Float, k2: Float) {
-        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-        guard let edges = applyEdgeDetection(to: ciImage) else { return (k1: -0.25, k2: 0.06) }
-        let segments = detectLineSegments(in: edges)
-        guard segments.count >= 4 else { return (k1: -0.20, k2: 0.04) }
-        let curvatures = segments.map { estimateCurvature($0) }
-        let avgCurvature = curvatures.reduce(0, +) / Float(curvatures.count)
-        let k1 = -0.50 * avgCurvature - 0.05
-        let k2 = 0.18 * abs(avgCurvature) + 0.02
-        return (k1: clamp(k1, min: -0.60, max: -0.05), k2: clamp(k2, min: 0.0, max: 0.25))
+        return (k1: -0.25, k2: 0.06)
     }
 
-    private func applyEdgeDetection(to image: CIImage) -> CIImage? {
-        let gray = CIFilter(name: "CIPhotoEffectMono"); gray?.setValue(image, forKey: kCIInputImageKey)
-        guard let grayImg = gray?.outputImage else { return nil }
-        let edges = CIFilter(name: "CIEdges"); edges?.setValue(grayImg, forKey: kCIInputImageKey)
-        edges?.setValue(5.0, forKey: kCIInputIntensityKey)
-        return edges?.outputImage
-    }
+    private func applyEdgeDetection(to image: CIImage) -> CIImage? { nil }
 
     private struct LineSegment { let start: SIMD2<Float>; let end: SIMD2<Float>; let mid: SIMD2<Float>; let length: Float }
 
