@@ -108,14 +108,5 @@ final class AutoDetector: ObservableObject {
 }
 
 private extension CGImage {
-    func toPixelBuffer() -> CVPixelBuffer? {
-        var pb: CVPixelBuffer?
-        let w = width, h = height
-        CVPixelBufferCreate(kCFAllocatorDefault, w, h, kCVPixelFormatType_32BGRA, [kCVPixelBufferCGImageCompatibilityKey: true, kCVPixelBufferCGBitmapContextCompatibilityKey: true] as CFDictionary, &pb)
-        guard let buffer = pb else { return nil }
-        CVPixelBufferLockBaseAddress(buffer, []); defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
-        guard let ctx = CGContext(data: CVPixelBufferGetBaseAddress(buffer), width: w, height: h, bitsPerComponent: 8, bytesPerRow: CVPixelBufferGetBytesPerRow(buffer), space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue) else { return nil }
-        ctx.draw(self, in: CGRect(x: 0, y: 0, width: w, height: h))
-        return buffer
-    }
+    func toPixelBuffer() -> CVPixelBuffer? { nil }
 }
