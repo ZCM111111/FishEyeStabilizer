@@ -25,18 +25,16 @@ workflows:
         script: brew install xcodegen
       - name: Generate Xcode project
         script: xcodegen generate
-      - name: Build for simulator
+      - name: Build for device (no sign)
         script: |
           xcodebuild build \
             -project FishEyeStabilizer.xcodeproj \
             -scheme FishEyeStabilizer \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -destination 'generic/platform=iOS' \
             -configuration Debug \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
-    artifacts:
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/Debug-iphonesimulator/*.app
 
   # ----------------------------------------------------------
   # 发布构建 (Release) — 无签名 IPA
@@ -120,7 +118,7 @@ workflows:
           xcodebuild build \
             -project FishEyeStabilizer.xcodeproj \
             -scheme FishEyeStabilizer \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -destination 'generic/platform=iOS' \
             -configuration Debug \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
