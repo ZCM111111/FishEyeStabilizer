@@ -50,6 +50,9 @@ final class MetalRenderer: NSObject, ObservableObject {
     /// 是否启用鱼眼矫正
     @Published var fisheyeEnabled: Bool = true
 
+    /// 显示目标（弱引用）
+    weak var displayView: MTKView?
+
     /// 是否启用地平线防抖
     @Published var stabilizeEnabled: Bool = true
 
@@ -146,6 +149,7 @@ final class MetalRenderer: NSObject, ObservableObject {
         pixelBuffer: CVPixelBuffer,
         into displayView: MTKView? = nil
     ) -> MTLTexture? {
+        let targetView = displayView ?? self.displayView
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
             return nil
         }
@@ -203,7 +207,7 @@ final class MetalRenderer: NSObject, ObservableObject {
         // --- 步骤 3: 地平线防抖 (如果启用) ---
         var finalTexture: MTLTexture = outTexture
 
-        if stabilizeEnabled, let pipeline = stabilizePipeline, let view = displayView {
+        if stabilizeEnabled, let pipeline = stabilizePipeline, let view = targetView {
             applyHorizonStabilize(
                 commandBuffer: commandBuffer,
                 pipeline: pipeline,

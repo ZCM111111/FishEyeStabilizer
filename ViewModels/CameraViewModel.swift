@@ -1,5 +1,6 @@
 import SwiftUI
 @preconcurrency import AVFoundation
+@preconcurrency import CoreVideo
 import Combine
 @preconcurrency import Photos
 import Metal

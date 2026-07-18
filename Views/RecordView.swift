@@ -332,7 +332,7 @@ struct MetalPreviewView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: MTKView, context: Context) {
-        // MetalRenderer 通过其 render(into:) 方法写入 MTKView
+        renderer.displayView = uiView
     }
 }
 
