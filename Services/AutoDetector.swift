@@ -3,6 +3,7 @@
 @preconcurrency import AVFoundation
 import CoreVideo
 import CoreGraphics
+import simd
 
 // MARK: - 自动鱼眼检测器
 
