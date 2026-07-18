@@ -1,10 +1,6 @@
-@preconcurrency import Vision
-@preconcurrency import CoreImage
-@preconcurrency import AVFoundation
+import Foundation
 @preconcurrency import CoreVideo
-import CoreGraphics
-import simd
-import CoreMedia
+@preconcurrency import Vision
 
 final class AutoDetector: ObservableObject {
     struct DetectionResult {
