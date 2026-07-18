@@ -1,6 +1,7 @@
 import SwiftUI
 import Foundation
 import UIKit
+import Photos
 
 // MARK: - 处理 ViewModel (stub for CI)
 
@@ -58,8 +59,20 @@ final class ProcessingViewModel: ObservableObject {
         horizonStabilizer.strength = strength
     }
 
-    func startProcessing() async {
+    func loadVideoFromAsset(_ asset: PHAsset) async {
         // CI stub
+    }
+
+    func runAutoDetection() async {
+        stage = .analyzing
+        stage = .configuring
+    }
+
+    func generatePreview() async {
+        // CI stub
+    }
+
+    func startProcessing() async {
         stage = .completed
     }
 }
