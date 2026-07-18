@@ -146,8 +146,4 @@ struct SettingsView: View {
     }
 }
 
-// MARK: - 预览
-
-#Preview {
-    SettingsView(cameraVM: CameraViewModel())
-}
+// Preview omitted

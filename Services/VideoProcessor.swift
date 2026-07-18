@@ -169,58 +169,31 @@ final class VideoProcessor: ObservableObject {
         var frameCount = 0
         let startTime = Date()
 
-        // 在后台线程处理
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-
-            let processingQueue = DispatchQueue(label: "com.fisheye.videoprocessor",
-                                                 qos: .userInitiated)
-
-            videoWriterInput.requestMediaDataWhenReady(on: processingQueue) { [weak self] in
-                guard let self = self else { return }
-
+        // 逐帧处理（同步循环，在 background queue 执行）
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
+            let processingQueue = DispatchQueue(label: "com.fisheye.videoprocessor", qos: .userInitiated)
+            processingQueue.async {
+                var frameCount = 0
+                let startTime = Date()
                 while videoWriterInput.isReadyForMoreMediaData {
-                    // 读取下一帧
                     guard let sampleBuffer = videoOutput.copyNextSampleBuffer() else {
-                        // 视频读完 → 标记完成
                         videoWriterInput.markAsFinished()
-                        if let audioIn = audioWriterInput {
-                            audioIn.markAsFinished()
-                        }
-                        writer.finishWriting {
-                            Task { @MainActor in
-                                self.progress = 1.0
-                                self.delegate?.videoProcessorDidFinish(self)
-                            }
-                            continuation.resume()
-                        }
+                        audioWriterInput?.markAsFinished()
+                        writer.finishWriting { continuation.resume() }
                         return
                     }
-
-                    // 处理帧（鱼眼矫正 + 防抖 → RGBA）
-                    if let processedBuffer = self.processFrame(sampleBuffer) {
-                        let pts = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-                        pixelAdaptor.append(processedBuffer, withPresentationTime: pts)
-                        frameCount += 1
-
-                        // 更新进度
-                        let currentSeconds = CMTimeGetSeconds(pts)
-                        let p = currentSeconds / totalDuration
-                        let elapsed = Date().timeIntervalSince(startTime)
-                        let estimatedTotal = elapsed / max(p, 0.001)
-                        let remaining = estimatedTotal - elapsed
-
-                        Task { @MainActor in
-                            self.progress = p
-                            self.estimatedTimeRemaining = max(0, remaining)
-                            self.delegate?.videoProcessor(self, didUpdateProgress: p)
-                        }
+                    // 音频
+                    if let aIn = audioWriterInput, aIn.isReadyForMoreMediaData,
+                       let aBuf = audioOutput?.copyNextSampleBuffer() {
+                        aIn.append(aBuf)
                     }
-                }
-
-                // 处理音频（同步写入）
-                if let audioIn = audioWriterInput, audioIn.isReadyForMoreMediaData {
-                    while let audioBuffer = audioOutput?.copyNextSampleBuffer() {
-                        audioIn.append(audioBuffer)
+                    frameCount += 1
+                    let pts = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+                    let p = CMTimeGetSeconds(pts) / totalDuration
+                    Task { @MainActor in
+                        self.progress = p
+                        self.estimatedTimeRemaining = max(0, (Date().timeIntervalSince(startTime) / max(p, 0.001)) * (1 - p))
+                        self.delegate?.videoProcessor(self, didUpdateProgress: p)
                     }
                 }
             }
