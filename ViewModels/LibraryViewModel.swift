@@ -1,6 +1,6 @@
 import SwiftUI
-@preconcurrency import PhotosUI
-@preconcurrency import AVFoundation
+import PhotosUI
+import AVFoundation
 
 // MARK: - 相册视频库 ViewModel
 
