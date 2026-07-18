@@ -266,7 +266,8 @@ final class AutoDetector: ObservableObject {
         }
 
         // 遍历检测到的轮廓，提取近似直线段
-        for contour in results {
+        for observation in results {
+            guard let contour = observation.topLevelContours.first else { continue }
             let points = contour.normalizedPathPoints
             guard points.count >= 4 else { continue }
 
@@ -276,7 +277,7 @@ final class AutoDetector: ObservableObject {
 
             // 计算线段长度（过滤太短的线段）
             let length = hypot(end.x - start.x, end.y - start.y)
-            guard length > 0.05 else { continue } // 忽略长度小于 5% 画面的线段
+            guard length > 0.05 else { continue }
 
             // 计算线段中点（用于判断弯曲）
             let mid = points[points.count / 2]
