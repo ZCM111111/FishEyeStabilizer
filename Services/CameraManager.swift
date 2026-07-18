@@ -48,7 +48,7 @@ final class CameraManager: NSObject, ObservableObject {
                 kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
             ]
             videoOutput.alwaysDiscardsLateVideoFrames = true
-            // delegate set in next block
+            videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue.main)
         }
         session.commitConfiguration()
     }
@@ -83,4 +83,13 @@ final class CameraManager: NSObject, ObservableObject {
     func startSession() { session.startRunning(); isSessionRunning = session.isRunning }
     func stopSession() { session.stopRunning(); isSessionRunning = session.isRunning }
     func toggleCamera() {}
+}
+
+extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        let timestamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+        delegate?.cameraManager(self, didOutputPixelBuffer: pixelBuffer, timestamp: timestamp)
+    }
+    func captureOutput(_ output: AVCaptureOutput, didDrop sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {}
 }
