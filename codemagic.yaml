@@ -14,7 +14,7 @@ workflows:
     instance_type: mac_mini_m1
     max_build_duration: 30
     environment:
-      xcode: latest
+      xcode: "16.2"
     triggering:
       events:
         - push
@@ -50,7 +50,7 @@ workflows:
     instance_type: mac_mini_m1
     max_build_duration: 60
     environment:
-      xcode: latest
+      xcode: "16.2"
       vars:
         BUNDLE_ID: "com.fisheye.stabilizer"
     triggering:
@@ -116,7 +116,7 @@ workflows:
     instance_type: mac_mini_m1
     max_build_duration: 20
     environment:
-      xcode: latest
+      xcode: "16.2"
     triggering:
       events:
         - pull_request
