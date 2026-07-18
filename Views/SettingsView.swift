@@ -53,29 +53,7 @@ struct SettingsView: View {
                     Label("导出设置", systemImage: "gearshape.2")
                 }
 
-                // --- 录制设置 ---
-                Section {
-                    Picker("录制分辨率", selection: Binding(
-                        get: { cameraVM.cameraManager.sessionPreset },
-                        set: { _ in }
-                    )) {
-                        Text("4K UHD (3840×2160)").tag(AVCaptureSession.Preset.hd4K3840x2160)
-                        Text("1080p HD (1920×1080)").tag(AVCaptureSession.Preset.hd1920x1080)
-                    }
-                    .disabled(true) // 当前不支持动态切换
-
-                    Picker("录制帧率", selection: Binding(
-                        get: { cameraVM.cameraManager.targetFrameRate },
-                        set: { _ in }
-                    )) {
-                        Text("60fps").tag(Int32(60))
-                        Text("30fps").tag(Int32(30))
-                        Text("24fps").tag(Int32(24))
-                    }
-                    .disabled(true)
-                } header: {
-                    Label("录制设置", systemImage: "record.circle")
-                }
+                // 录制设置在后续版本开放
 
                 // --- 镜头校准 ---
                 Section {
