@@ -58,43 +58,22 @@ final class MetalRenderer: NSObject, ObservableObject {
 
     // MARK: - 初始化
 
-    private let metalAvailable: Bool
+    private var textureCacheCreated = false
 
     override init() {
-        guard let metalDevice = MTLCreateSystemDefaultDevice(),
-              let queue = metalDevice.makeCommandQueue(),
-              let metalLibrary = metalDevice.makeDefaultLibrary() else {
-            print("⚠️ [MetalRenderer] Metal 不可用，使用软件模式")
+        guard let d = MTLCreateSystemDefaultDevice(),
+              let q = d.makeCommandQueue(),
+              let lib = d.makeDefaultLibrary() else {
             self.device = MTLCreateSystemDefaultDevice()!
             self.commandQueue = (MTLCreateSystemDefaultDevice()?.makeCommandQueue())!
             self.library = (MTLCreateSystemDefaultDevice()?.makeDefaultLibrary())!
-            self.metalAvailable = false
             super.init()
             return
         }
-        self.device = metalDevice
-        self.metalAvailable = true
-        self.commandQueue = queue
-
-        // --- 加载着色器库 ---
-        // 在 Xcode 中需要将 .metal 文件添加到 Compile Sources
-        guard let metalLibrary = metalDevice.makeDefaultLibrary() else {
-            fatalError("❌ [MetalRenderer] 无法加载默认着色器库。请确保 .metal 文件已添加到 Target")
-        }
-        self.library = metalLibrary
-
+        self.device = d
+        self.commandQueue = q
+        self.library = lib
         super.init()
-
-        // --- 创建纹理缓存 ---
-        CVMetalTextureCacheCreate(
-            kCFAllocatorDefault,
-            nil,
-            metalDevice,
-            nil,
-            &textureCache
-        )
-
-        // 着色器延迟到首次渲染时编译
     }
 
     // MARK: - 着色器管线设置
@@ -305,6 +284,9 @@ final class MetalRenderer: NSObject, ObservableObject {
         width: Int,
         height: Int
     ) -> MTLTexture? {
+        if textureCache == nil {
+            CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &textureCache)
+        }
         guard let textureCache = textureCache else { return nil }
 
         var cvTextureOut: CVMetalTexture?
