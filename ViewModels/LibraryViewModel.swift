@@ -1,6 +1,7 @@
 import SwiftUI
 import PhotosUI
 import AVFoundation
+import Photos
 
 // MARK: - 相册视频库 ViewModel
 
@@ -68,11 +69,7 @@ final class LibraryViewModel: ObservableObject {
 
     // MARK: - 初始化
 
-    init() {
-        Task {
-            await requestPermissionAndLoad()
-        }
-    }
+    init() {}
 
     // MARK: - 权限与加载
 
