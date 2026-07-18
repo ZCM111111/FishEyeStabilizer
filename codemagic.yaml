@@ -1,29 +1,20 @@
 # ============================================================
 # Codemagic CI/CD 配置 — FishEye Stabilizer
 # ============================================================
-# 使用方式:
-# 1. 将项目推送到 GitHub/GitLab/Bitbucket
-# 2. 在 codemagic.io 连接仓库
-# 3. Codemagic 自动读取此文件，一键构建 + 签名 + 分发
-#
-# 免费额度: 500 分钟/月 (macOS M1 standard)
+# 无证书构建 → 产出未签名 IPA → 用户自行用 iOS App Signer 等工具签名
 # ============================================================
 
 workflows:
 
   # ----------------------------------------------------------
-  # 工作流 1: 开发构建 (Debug)
-  # 触发: 推送到 develop 分支
-  # 产出: 未签名 .app (仅用于模拟器测试)
+  # 开发构建 (Debug)
   # ----------------------------------------------------------
   debug-build:
     name: Debug Build
-    instance_type: mac_mini_m1   # 免费额度友好
+    instance_type: mac_mini_m1
     max_build_duration: 30
     environment:
       xcode: latest
-      groups:
-        - fisheye_defaults
     triggering:
       events:
         - push
@@ -48,22 +39,15 @@ workflows:
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/Debug-iphonesimulator/*.app
 
   # ----------------------------------------------------------
-  # 工作流 2: 发布构建 (Release)
-  # 触发: 推送到 main 分支 / 手动触发
-  # 产出: 签名 IPA → TestFlight / App Store
+  # 发布构建 (Release) — 无签名 IPA
   # ----------------------------------------------------------
   release-build:
-    name: Release Build
+    name: Release Build (Unsigned IPA)
     instance_type: mac_mini_m1
     max_build_duration: 60
     environment:
       xcode: latest
-      groups:
-        - fisheye_defaults
-        - fisheye_appstore_credentials  # Codemagic 环境变量组
       vars:
-        APP_STORE_CONNECT_KEY_ID: ""     # 在 Codemagic UI 中配置
-        APP_STORE_CONNECT_ISSUER_ID: ""
         BUNDLE_ID: "com.fisheye.stabilizer"
     triggering:
       events:
@@ -72,7 +56,7 @@ workflows:
       branch_patterns:
         - pattern: main
       tag_patterns:
-        - pattern: 'v*'                 # v1.0.0 等版本标签触发发布
+        - pattern: 'v*'
       cancel_previous_builds: true
     scripts:
       # --- 步骤 1: 生成工程 ---
@@ -80,22 +64,14 @@ workflows:
         script: |
           brew install xcodegen
           xcodegen generate
-          echo "✅ Xcode project generated"
 
       # --- 步骤 2: 设置版本号 ---
       - name: Set build number
         script: |
-          cd ios/
           agvtool new-version -all $PROJECT_BUILD_NUMBER
-          echo "Build: $PROJECT_BUILD_NUMBER"
 
-      # --- 步骤 3: CocoaPods / SPM 依赖 (当前无依赖，预留给未来) ---
-      # - name: Install dependencies
-      #   script: |
-      #     xcodebuild -resolvePackageDependencies
-
-      # --- 步骤 4: 构建 Archive ---
-      - name: Build archive
+      # --- 步骤 3: 构建 Archive（跳过签名） ---
+      - name: Build unsigned archive
         script: |
           xcodebuild archive \
             -project FishEyeStabilizer.xcodeproj \
@@ -103,45 +79,27 @@ workflows:
             -archivePath build/FishEyeStabilizer.xcarchive \
             -destination 'generic/platform=iOS' \
             -configuration Release \
-            CODE_SIGN_STYLE=Automatic \
-            DEVELOPMENT_TEAM="$APPLE_DEVELOPER_TEAM"
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
 
-      # --- 步骤 5: 导出 IPA ---
-      - name: Export IPA
+      # --- 步骤 4: 导出未签名 IPA ---
+      - name: Export unsigned IPA
         script: |
-          xcodebuild -exportArchive \
-            -archivePath build/FishEyeStabilizer.xcarchive \
-            -exportPath build/ipa \
-            -exportOptionsPlist exportOptions.plist
-
-      # --- 步骤 6: 发布到 TestFlight ---
-      - name: Publish to TestFlight
-        script: |
-          xcrun altool --upload-app \
-            -f build/ipa/FishEyeStabilizer.ipa \
-            -t ios \
-            --apiKey "$APP_STORE_CONNECT_KEY_ID" \
-            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" \
-            --verbose
+          # 直接从 .app 打包成 .ipa（绕过签名检查）
+          mkdir -p build/ipa/Payload
+          cp -R build/FishEyeStabilizer.xcarchive/Products/Applications/FishEyeStabilizer.app build/ipa/Payload/
+          cd build/ipa
+          zip -r ../FishEyeStabilizer-unsigned.ipa Payload/
+          cd ../..
+          echo "✅ 未签名 IPA 已生成: build/FishEyeStabilizer-unsigned.ipa"
 
     artifacts:
-      - build/ipa/*.ipa
+      - build/FishEyeStabilizer-unsigned.ipa
       - build/FishEyeStabilizer.xcarchive
 
-    publishing:
-      # 构建成功/失败时发邮件通知
-      email:
-        recipients:
-          - email@example.com    # 替换为你的邮箱
-      # Slack 通知 (可选)
-      # slack:
-      #   channel: '#builds'
-      #   notify_on_build_status: true
-
   # ----------------------------------------------------------
-  # 工作流 3: Pull Request 校验
-  # 触发: 创建/更新 PR
-  # 只编译检查，不生成完整包
+  # Pull Request 校验
   # ----------------------------------------------------------
   pr-check:
     name: PR Check
@@ -168,10 +126,3 @@ workflows:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             | tee build.log
-      - name: Check for warnings
-        script: |
-          WARNINGS=$(grep -c "warning:" build.log || true)
-          echo "Warnings: $WARNINGS"
-          if [ "$WARNINGS" -gt 50 ]; then
-            echo "⚠️ 太多编译警告 ($WARNINGS)，请检查"
-          fi
