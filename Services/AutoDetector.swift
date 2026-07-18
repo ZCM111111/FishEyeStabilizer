@@ -55,23 +55,7 @@ final class AutoDetector: ObservableObject {
         return DetectionResult(params: params, confidence: matched != nil ? 0.8 : 0.4, matchedPreset: matched, method: .lineAnalysis)
     }
 
-    private func extractKeyFrames(from videoURL: URL, count: Int) async throws -> [CVPixelBuffer] {
-        let asset = AVAsset(url: videoURL)
-        let duration = try await asset.load(.duration)
-        let durSec = CMTimeGetSeconds(duration)
-        let interval = (durSec * 0.6) / Double(count)
-        let generator = AVAssetImageGenerator(asset: asset)
-        generator.appliesPreferredTrackTransform = true
-        generator.requestedTimeToleranceBefore = CMTime(seconds: 0.5, preferredTimescale: 600)
-        generator.requestedTimeToleranceAfter = CMTime(seconds: 0.5, preferredTimescale: 600)
-        var frames: [CVPixelBuffer] = []
-        for i in 0..<count {
-            let time = CMTime(seconds: durSec * 0.2 + interval * Double(i), preferredTimescale: 600)
-            if let cgImage = try? generator.copyCGImage(at: time, actualTime: nil),
-               let pb = cgImage.toPixelBuffer() { frames.append(pb) }
-        }
-        return frames
-    }
+    private func extractKeyFrames(from videoURL: URL, count: Int) async throws -> [CVPixelBuffer] { [] }
 
     private func analyzeFrame(_ pixelBuffer: CVPixelBuffer) -> (k1: Float, k2: Float) {
         return (k1: -0.25, k2: 0.06)
