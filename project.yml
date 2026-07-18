@@ -23,14 +23,21 @@ targets:
     type: application
     platform: iOS
     sources:
-      # 所有源文件和资源
-      - path: .
-        includes:
-          - "**/*.swift"
-          - "**/*.metal"
-          - "Resources/**"
-        excludes:
-          - ".git/**"
+      # Swift 源文件（按目录添加，避免 XcodeGen 产生重复 group 引用）
+      - path: FishEyeStabilizerApp.swift
+      - path: Models
+        type: group
+      - path: Views
+        type: group
+      - path: ViewModels
+        type: group
+      - path: Services
+        type: group
+      - path: Shaders
+        type: group
+      - path: Resources
+        type: group
+      - path: Info.plist
     settings:
       base:
         INFOPLIST_FILE: "Info.plist"
