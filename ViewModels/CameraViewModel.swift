@@ -2,6 +2,8 @@ import SwiftUI
 @preconcurrency import AVFoundation
 import Combine
 @preconcurrency import Photos
+import Metal
+import VideoToolbox
 
 // MARK: - 相机 ViewModel
 
