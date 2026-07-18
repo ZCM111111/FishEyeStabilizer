@@ -1,0 +1,310 @@
+[
+  {
+    "manufacturer": "DJI",
+    "model": "Action 5 Pro",
+    "lensType": "superWide",
+    "distortionParams": {
+      "k1": -0.22,
+      "k2": 0.05,
+      "k3": -0.005,
+      "centerX": 0.5,
+      "centerY": 0.5,
+      "scale": 1.10
+    },
+    "isUserCustom": false
+  },
+  {
+    "manufacturer": "DJI",
+    "model": "Action 4",
+    "lensType": "superWide",
+    "distortionParams": {
+      "k1": -0.24,
+      "k2": 0.06,
+      "k3": -0.008,
+      "centerX": 0.5,
+      "centerY": 0.5,
+      "scale": 1.12
+    },
+    "isUserCustom": false
+  },
+  {
+    "manufacturer": "DJI",
+    "model": "Action 3",
+    "lensType": "superWide",
+    "distortionParams": {
+      "k1": -0.25,
+      "k2": 0.07,
+      "k3": -0.01,
+      "centerX": 0.5,
+      "centerY": 0.5,
+      "scale": 1.12
+    },
+    "isUserCustom": false
+  },
+  {
+    "manufacturer": "DJI",
+    "model": "Osmo Action",
+    "lensType": "wide",
+    "distortionParams": {
+      "k1": -0.18,
+      "k2": 0.03,
+      "k3": 0.0,
+      "centerX": 0.5,
+      "centerY": 0.5,
+      "scale": 1.06
+    },
+    "isUserCustom": false
+  },
+  {
+    "manufacturer": "DJI",
+    "model": "Pocket 3",
+    "lensType": "wide",
+    "distortionParams": {
+      "k1": -0.12,
+      "k2": 0.01,
+      "k3": 0.0,
+      "centerX": 0.5,
+      "centerY": 0.5,
+      "scale": 1.04
+    },
+    "isUserCustom": false
+  },
+  {
+    "manufacturer": "GoPro",
+    "model": "HERO 13 Black",
+    "lensType": "superWide",
+    "distortionParams": {
+      "k1": -0.26,
+      "k2": 0.08,
+      "k3": -0.012,
+      "centerX": 0.5,
+      "centerY": 0.5,
+      "scale": 1.14
+    },
+    "isUserCustom": false
+  },
+  {
+    "manufacturer": "GoPro",
+    "model": "HERO 12 Black",
+    "lensType": "superWide",
+    "distortionParams": {
+      "k1": -0.27,
+      "k2": 0.08,
+      "k3": -0.012,
+      "centerX": 0.5,
+      "centerY": 0.5,
+      "scale": 1.14
+    },
+    "isUserCustom": false
+  },
+  {
+    "manufacturer": "GoPro",
+    "model": "HERO 11 Black",
+    "lensType": "superWide",
+    "distortionParams": {
+      "k1": -0.28,
+      "k2": 0.09,
+      "k3": -0.015,
+      "centerX": 0.5,
+      "centerY": 0.5,
+      "scale": 1.15
+    },
+    "isUserCustom": false
+  },
+  {
+    "manufacturer": "GoPro",
+    "model": "HERO 10 Black",
+    "lensType": "superWide",
+    "distortionParams": {
+      "k1": -0.28,
+      "k2": 0.09,
+      "k3": -0.015,
+      "centerX": 0.5,
+      "centerY": 0.5,
+      "scale": 1.15
+    },
+    "isUserCustom": false
+  },
+  {
+    "manufacturer": "GoPro",
+    "model": "HERO 9 Black",
+    "lensType": "superWide",
+    "distortionParams": {
+      "k1": -0.30,
+      "k2": 0.10,
+      "k3": -0.018,
+      "centerX": 0.5,
+      "centerY": 0.5,
+      "scale": 1.18
+    },
+    "isUserCustom": false
+  },
+  {
+    "manufacturer": "GoPro",
+    "model": "HERO 8 Black",
+    "lensType": "superWide",
+    "distortionParams": {
+      "k1": -0.31,
+      "k2": 0.11,
+      "k3": -0.02,
+      "centerX": 0.5,
+      "centerY": 0.5,
+      "scale": 1.18
+    },
+    "isUserCustom": false
+  },
+  {
+    "manufacturer": "GoPro",
+    "model": "MAX (单镜头模式)",
+    "lensType": "fisheye",
+    "distortionParams": {
+      "k1": -0.42,
+      "k2": 0.16,
+      "k3": -0.04,
+      "centerX": 0.5,
+      "centerY": 0.5,
+      "scale": 1.25
+    },
+    "isUserCustom": false
+  },
+  {
+    "manufacturer": "Insta360",
+    "model": "X4 (单镜头)",
+    "lensType": "extremeFisheye",
+    "distortionParams": {
+      "k1": -0.55,
+      "k2": 0.22,
+      "k3": -0.06,
+      "centerX": 0.5,
+      "centerY": 0.5,
+      "scale": 1.35
+    },
+    "isUserCustom": false
+  },
+  {
+    "manufacturer": "Insta360",
+    "model": "X3 (单镜头)",
+    "lensType": "extremeFisheye",
+    "distortionParams": {
+      "k1": -0.56,
+      "k2": 0.23,
+      "k3": -0.065,
+      "centerX": 0.5,
+      "centerY": 0.5,
+      "scale": 1.35
+    },
+    "isUserCustom": false
+  },
+  {
+    "manufacturer": "Insta360",
+    "model": "GO 3",
+    "lensType": "fisheye",
+    "distortionParams": {
+      "k1": -0.40,
+      "k2": 0.14,
+      "k3": -0.03,
+      "centerX": 0.5,
+      "centerY": 0.5,
+      "scale": 1.22
+    },
+    "isUserCustom": false
+  },
+  {
+    "manufacturer": "Insta360",
+    "model": "ONE RS (4K)",
+    "lensType": "superWide",
+    "distortionParams": {
+      "k1": -0.23,
+      "k2": 0.05,
+      "k3": -0.008,
+      "centerX": 0.5,
+      "centerY": 0.5,
+      "scale": 1.10
+    },
+    "isUserCustom": false
+  },
+  {
+    "manufacturer": "SONY",
+    "model": "RX0 II",
+    "lensType": "wide",
+    "distortionParams": {
+      "k1": -0.14,
+      "k2": 0.02,
+      "k3": 0.0,
+      "centerX": 0.5,
+      "centerY": 0.5,
+      "scale": 1.05
+    },
+    "isUserCustom": false
+  },
+  {
+    "manufacturer": "SONY",
+    "model": "FDR-X3000",
+    "lensType": "wide",
+    "distortionParams": {
+      "k1": -0.20,
+      "k2": 0.04,
+      "k3": -0.005,
+      "centerX": 0.5,
+      "centerY": 0.5,
+      "scale": 1.08
+    },
+    "isUserCustom": false
+  },
+  {
+    "manufacturer": "通用",
+    "model": "运动相机标广角",
+    "lensType": "wide",
+    "distortionParams": {
+      "k1": -0.15,
+      "k2": 0.02,
+      "k3": 0.0,
+      "centerX": 0.5,
+      "centerY": 0.5,
+      "scale": 1.05
+    },
+    "isUserCustom": false
+  },
+  {
+    "manufacturer": "通用",
+    "model": "运动相机超广角",
+    "lensType": "superWide",
+    "distortionParams": {
+      "k1": -0.30,
+      "k2": 0.08,
+      "k3": -0.01,
+      "centerX": 0.5,
+      "centerY": 0.5,
+      "scale": 1.15
+    },
+    "isUserCustom": false
+  },
+  {
+    "manufacturer": "通用",
+    "model": "手机超广角",
+    "lensType": "wide",
+    "distortionParams": {
+      "k1": -0.10,
+      "k2": 0.01,
+      "k3": 0.0,
+      "centerX": 0.5,
+      "centerY": 0.5,
+      "scale": 1.03
+    },
+    "isUserCustom": false
+  },
+  {
+    "manufacturer": "通用",
+    "model": "220° 鱼眼",
+    "lensType": "extremeFisheye",
+    "distortionParams": {
+      "k1": -0.50,
+      "k2": 0.20,
+      "k3": -0.05,
+      "centerX": 0.5,
+      "centerY": 0.5,
+      "scale": 1.30
+    },
+    "isUserCustom": false
+  }
+]

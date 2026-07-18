@@ -1,0 +1,37 @@
+# Xcode
+*.xcuserstate
+*.xcworkspace
+!default.xcworkspace
+xcuserdata/
+DerivedData/
+*.moved-aside
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# XcodeGen 生成的文件 (CI 中动态生成)
+*.xcodeproj
+!default.xcodeproj
+
+# CocoaPods
+Pods/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Codemagic
+codemagic_scripts/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/

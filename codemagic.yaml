@@ -1,0 +1,177 @@
+# ============================================================
+# Codemagic CI/CD 配置 — FishEye Stabilizer
+# ============================================================
+# 使用方式:
+# 1. 将项目推送到 GitHub/GitLab/Bitbucket
+# 2. 在 codemagic.io 连接仓库
+# 3. Codemagic 自动读取此文件，一键构建 + 签名 + 分发
+#
+# 免费额度: 500 分钟/月 (macOS M1 standard)
+# ============================================================
+
+workflows:
+
+  # ----------------------------------------------------------
+  # 工作流 1: 开发构建 (Debug)
+  # 触发: 推送到 develop 分支
+  # 产出: 未签名 .app (仅用于模拟器测试)
+  # ----------------------------------------------------------
+  debug-build:
+    name: Debug Build
+    instance_type: mac_mini_m1   # 免费额度友好
+    max_build_duration: 30
+    environment:
+      xcode: latest
+      groups:
+        - fisheye_defaults
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: develop
+    scripts:
+      - name: Install XcodeGen
+        script: brew install xcodegen
+      - name: Generate Xcode project
+        script: xcodegen generate
+      - name: Build for simulator
+        script: |
+          xcodebuild build \
+            -project FishEyeStabilizer.xcodeproj \
+            -scheme FishEyeStabilizer \
+            -destination 'platform=iOS Simulator,name=iPhone 15 Pro' \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+    artifacts:
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/Debug-iphonesimulator/*.app
+
+  # ----------------------------------------------------------
+  # 工作流 2: 发布构建 (Release)
+  # 触发: 推送到 main 分支 / 手动触发
+  # 产出: 签名 IPA → TestFlight / App Store
+  # ----------------------------------------------------------
+  release-build:
+    name: Release Build
+    instance_type: mac_mini_m1
+    max_build_duration: 60
+    environment:
+      xcode: latest
+      groups:
+        - fisheye_defaults
+        - fisheye_appstore_credentials  # Codemagic 环境变量组
+      vars:
+        APP_STORE_CONNECT_KEY_ID: ""     # 在 Codemagic UI 中配置
+        APP_STORE_CONNECT_ISSUER_ID: ""
+        BUNDLE_ID: "com.fisheye.stabilizer"
+    triggering:
+      events:
+        - push
+        - tag
+      branch_patterns:
+        - pattern: main
+      tag_patterns:
+        - pattern: 'v*'                 # v1.0.0 等版本标签触发发布
+      cancel_previous_builds: true
+    scripts:
+      # --- 步骤 1: 生成工程 ---
+      - name: Install XcodeGen & Generate Project
+        script: |
+          brew install xcodegen
+          xcodegen generate
+          echo "✅ Xcode project generated"
+
+      # --- 步骤 2: 设置版本号 ---
+      - name: Set build number
+        script: |
+          cd ios/
+          agvtool new-version -all $PROJECT_BUILD_NUMBER
+          echo "Build: $PROJECT_BUILD_NUMBER"
+
+      # --- 步骤 3: CocoaPods / SPM 依赖 (当前无依赖，预留给未来) ---
+      # - name: Install dependencies
+      #   script: |
+      #     xcodebuild -resolvePackageDependencies
+
+      # --- 步骤 4: 构建 Archive ---
+      - name: Build archive
+        script: |
+          xcodebuild archive \
+            -project FishEyeStabilizer.xcodeproj \
+            -scheme FishEyeStabilizer \
+            -archivePath build/FishEyeStabilizer.xcarchive \
+            -destination 'generic/platform=iOS' \
+            -configuration Release \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM="$APPLE_DEVELOPER_TEAM"
+
+      # --- 步骤 5: 导出 IPA ---
+      - name: Export IPA
+        script: |
+          xcodebuild -exportArchive \
+            -archivePath build/FishEyeStabilizer.xcarchive \
+            -exportPath build/ipa \
+            -exportOptionsPlist exportOptions.plist
+
+      # --- 步骤 6: 发布到 TestFlight ---
+      - name: Publish to TestFlight
+        script: |
+          xcrun altool --upload-app \
+            -f build/ipa/FishEyeStabilizer.ipa \
+            -t ios \
+            --apiKey "$APP_STORE_CONNECT_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" \
+            --verbose
+
+    artifacts:
+      - build/ipa/*.ipa
+      - build/FishEyeStabilizer.xcarchive
+
+    publishing:
+      # 构建成功/失败时发邮件通知
+      email:
+        recipients:
+          - email@example.com    # 替换为你的邮箱
+      # Slack 通知 (可选)
+      # slack:
+      #   channel: '#builds'
+      #   notify_on_build_status: true
+
+  # ----------------------------------------------------------
+  # 工作流 3: Pull Request 校验
+  # 触发: 创建/更新 PR
+  # 只编译检查，不生成完整包
+  # ----------------------------------------------------------
+  pr-check:
+    name: PR Check
+    instance_type: mac_mini_m1
+    max_build_duration: 20
+    environment:
+      xcode: latest
+    triggering:
+      events:
+        - pull_request
+    scripts:
+      - name: Install XcodeGen & Generate
+        script: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Build check
+        script: |
+          xcodebuild build \
+            -project FishEyeStabilizer.xcodeproj \
+            -scheme FishEyeStabilizer \
+            -destination 'platform=iOS Simulator,name=iPhone 15 Pro' \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee build.log
+      - name: Check for warnings
+        script: |
+          WARNINGS=$(grep -c "warning:" build.log || true)
+          echo "Warnings: $WARNINGS"
+          if [ "$WARNINGS" -gt 50 ]; then
+            echo "⚠️ 太多编译警告 ($WARNINGS)，请检查"
+          fi
