@@ -233,17 +233,15 @@ extension CameraViewModel: @preconcurrency CameraFrameDelegate {
         didOutputPixelBuffer pixelBuffer: CVPixelBuffer,
         timestamp: CMTime
     ) {
-        // 更新防抖参数（每帧）
-        Task {
-            await horizonStabilizer.updateForFrame(timestamp: timestamp.seconds)
-        }
-
-        // Metal 渲染
+        // Metal 渲染在后台线程
         let processedTexture = renderer.render(pixelBuffer: pixelBuffer, into: nil)
 
-        // 如果正在录制，写入处理后的帧
-        if isRecording, let texture = processedTexture, isWriterReady {
-            writeFrame(texture: texture, timestamp: timestamp)
+        // UI 状态检查在主线程
+        Task { @MainActor in
+            await horizonStabilizer.updateForFrame(timestamp: timestamp.seconds)
+            if isRecording, let texture = processedTexture, isWriterReady {
+                writeFrame(texture: texture, timestamp: timestamp)
+            }
         }
     }
 
