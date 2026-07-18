@@ -95,33 +95,9 @@ final class AutoDetector: ObservableObject {
 
     private struct LineSegment { let start: SIMD2<Float>; let end: SIMD2<Float>; let mid: SIMD2<Float>; let length: Float }
 
-    private func detectLineSegments(in edgeImage: CIImage) -> [LineSegment] {
-        var segments: [LineSegment] = []
-        let request = VNDetectContoursRequest()
-        request.detectsDarkOnLight = true; request.maximumImageDimension = 1024
-        let handler = VNImageRequestHandler(ciImage: edgeImage)
-        try? handler.perform([request])
-        guard let results = request.results else { return segments }
-        for observation in results {
-            guard let contour = observation.topLevelContours.first else { continue }
-            let points = contour.normalizedPathPoints
-            guard points.count >= 4 else { continue }
-            let start = points.first!, end = points.last!
-            let length = hypot(end.x - start.x, end.y - start.y)
-            guard length > 0.05 else { continue }
-            let mid = points[points.count / 2]
-            segments.append(LineSegment(start: SIMD2<Float>(Float(start.x), Float(start.y)), end: SIMD2<Float>(Float(end.x), Float(end.y)), mid: SIMD2<Float>(Float(mid.x), Float(mid.y)), length: Float(length)))
-        }
-        return segments
-    }
+    private func detectLineSegments(in edgeImage: CIImage) -> [LineSegment] { [] }
 
-    private func estimateCurvature(_ seg: LineSegment) -> Float {
-        let lineVec = seg.end - seg.start, midVec = seg.mid - seg.start
-        guard seg.length > 0.0001 else { return 0 }
-        let t = simd_dot(midVec, lineVec) / simd_dot(lineVec, lineVec)
-        let projection = seg.start + t * lineVec
-        return simd_distance(seg.mid, projection) / seg.length
-    }
+    private func estimateCurvature(_ seg: LineSegment) -> Float { 0 }
 
     func median(_ values: [Float]) -> Float {
         let s = values.sorted(); let m = s.count / 2
