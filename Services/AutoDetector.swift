@@ -1,5 +1,4 @@
 import Foundation
-import CoreVideo
 
 final class AutoDetector: ObservableObject {
     struct DetectionResult {
