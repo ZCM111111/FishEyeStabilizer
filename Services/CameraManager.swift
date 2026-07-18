@@ -19,6 +19,11 @@ final class CameraManager: NSObject, ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     private let frameQueue = DispatchQueue(label: "com.fisheye.frames", qos: .userInteractive)
+
+    /// 相机配置和启停的专用后台串行队列
+    /// AVCaptureSession.startRunning() 是同步阻塞调用，绝对不能在主线程执行
+    private let sessionQueue = DispatchQueue(label: "com.fisheye.session", qos: .userInitiated)
+
     private var configured = false
 
     override init() {
@@ -26,6 +31,7 @@ final class CameraManager: NSObject, ObservableObject {
         super.init()
     }
 
+    /// 在后台队列配置相机会话
     private func configureSession() {
         session.beginConfiguration()
         if session.canSetSessionPreset(sessionPreset) {
@@ -82,8 +88,42 @@ final class CameraManager: NSObject, ObservableObject {
         return bestFormat
     }
 
-    func startSession() { if !configured { configureSession(); configured = true }; session.startRunning(); isSessionRunning = session.isRunning }
-    func stopSession() { session.stopRunning(); isSessionRunning = session.isRunning }
+    // MARK: - 会话控制（后台线程安全）
+
+    /// 启动相机会话 — 在后台队列执行所有阻塞操作
+    func startSession() {
+        sessionQueue.async { [weak self] in
+            guard let self else { return }
+
+            if !self.configured {
+                self.configureSession()
+                self.configured = true
+            }
+
+            // AVCaptureSession.startRunning() 是同步阻塞调用！
+            // 必须在后台线程执行，否则会卡死主线程 UI
+            self.session.startRunning()
+
+            // @Published 更新回主线程
+            let running = self.session.isRunning
+            DispatchQueue.main.async {
+                self.isSessionRunning = running
+            }
+        }
+    }
+
+    /// 停止相机会话
+    func stopSession() {
+        sessionQueue.async { [weak self] in
+            guard let self else { return }
+            self.session.stopRunning()
+            let running = self.session.isRunning
+            DispatchQueue.main.async {
+                self.isSessionRunning = running
+            }
+        }
+    }
+
     func toggleCamera() {}
 }
 
