@@ -1,6 +1,4 @@
-@preconcurrency import AVFoundation
-@preconcurrency import CoreImage
-import Combine
+import Foundation
 
 // MARK: - 离线视频处理器 (stub for CI)
 

@@ -50,7 +50,7 @@ targets:
         CODE_SIGNING_REQUIRED: "NO"
         CODE_SIGNING_ALLOWED: "NO"
         PROVISIONING_PROFILE_SPECIFIER: ""
-        # 禁用 SwiftUI Preview (CI 不需要，避免 __preview.dylib 链接错误)
+        SWIFT_STRICT_CONCURRENCY: "minimal"
         ENABLE_PREVIEWS: "NO"
         # Metal 编译器设置
         MTL_ENABLE_DEBUG_INFO: "$(INCLUDE_DEBUG_INFORMATION_IN_METAL)"

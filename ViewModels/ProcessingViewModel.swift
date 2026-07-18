@@ -1,6 +1,6 @@
 import SwiftUI
-@preconcurrency import AVFoundation
-@preconcurrency import Photos
+import AVFoundation
+import Photos
 
 // MARK: - 处理 ViewModel
 

@@ -1,6 +1,5 @@
 import SwiftUI
-@preconcurrency import PhotosUI
-@preconcurrency import AVKit
+import PhotosUI
 
 // MARK: - 相册视图
 

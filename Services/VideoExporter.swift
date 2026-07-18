@@ -1,6 +1,5 @@
-@preconcurrency import AVFoundation
-@preconcurrency import Photos
-@preconcurrency import UIKit
+import AVFoundation
+import Photos
 
 // MARK: - 视频导出服务
 

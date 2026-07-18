@@ -1,5 +1,4 @@
 import SwiftUI
-@preconcurrency import AVFoundation
 
 // MARK: - 设置视图
 
