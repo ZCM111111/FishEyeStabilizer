@@ -1,16 +1,8 @@
-# ============================================================
-# Codemagic CI/CD 配置 — FishEye Stabilizer
-# ============================================================
-# 无证书构建 → 产出未签名 IPA → 用户自行用 iOS App Signer 等工具签名
-# ============================================================
-
 workflows:
 
-  # ----------------------------------------------------------
-  # 开发构建 (Debug)
-  # ----------------------------------------------------------
+  # Debug 构建 + IPA
   debug-build:
-    name: Debug Build
+    name: Debug Build + IPA
     instance_type: mac_mini_m1
     max_build_duration: 30
     environment:
@@ -19,13 +11,14 @@ workflows:
       events:
         - push
       branch_patterns:
-        - pattern: develop
+        - pattern: main
+      cancel_previous_builds: true
     scripts:
       - name: Install XcodeGen
         script: brew install xcodegen
       - name: Generate Xcode project
         script: xcodegen generate
-      - name: Build for device (no sign)
+      - name: Build for device
         script: |
           xcodebuild build \
             -project FishEyeStabilizer.xcodeproj \
@@ -35,92 +28,54 @@ workflows:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
+      - name: Package unsigned IPA
+        script: |
+          APP_PATH=$(find $HOME/Library/Developer/Xcode/DerivedData -name "FishEye*.app" -path "*/Debug-iphoneos/*" 2>/dev/null | head -1)
+          echo "Found app: $APP_PATH"
+          mkdir -p $CM_BUILD_DIR/build/Payload
+          cp -R "$APP_PATH" $CM_BUILD_DIR/build/Payload/
+          cd $CM_BUILD_DIR/build
+          zip -r FishEyeStabilizer-unsigned.ipa Payload/
+          ls -lh FishEyeStabilizer-unsigned.ipa
+    artifacts:
+      - build/FishEyeStabilizer-unsigned.ipa
 
-  # ----------------------------------------------------------
-  # 发布构建 (Release) — 无签名 IPA
-  # ----------------------------------------------------------
+  # Release Archive + IPA
   release-build:
     name: Release Build (Unsigned IPA)
     instance_type: mac_mini_m1
     max_build_duration: 60
     environment:
       xcode: "16.2"
-      vars:
-        BUNDLE_ID: "com.fisheye.stabilizer"
     triggering:
       events:
-        - push
         - tag
-      branch_patterns:
-        - pattern: main
       tag_patterns:
         - pattern: 'v*'
       cancel_previous_builds: true
-    scripts:
-      # --- 步骤 1: 生成工程 ---
-      - name: Install XcodeGen & Generate Project
-        script: |
-          brew install xcodegen
-          xcodegen generate
-
-      # --- 步骤 2: 设置版本号 ---
-      - name: Set build number
-        script: |
-          agvtool new-version -all $PROJECT_BUILD_NUMBER
-
-      # --- 步骤 3: 构建 Archive（跳过签名） ---
-      - name: Build unsigned archive
-        script: |
-          xcodebuild archive \
-            -project FishEyeStabilizer.xcodeproj \
-            -scheme FishEyeStabilizer \
-            -archivePath "$CM_BUILD_DIR/build/FishEyeStabilizer.xcarchive" \
-            -destination 'generic/platform=iOS' \
-            -configuration Release \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
-
-      # --- 步骤 4: 导出未签名 IPA ---
-      - name: Export unsigned IPA
-        script: |
-          BUILD_DIR="$CM_BUILD_DIR/build"
-          mkdir -p "$BUILD_DIR/ipa/Payload"
-          cp -R "$BUILD_DIR/FishEyeStabilizer.xcarchive/Products/Applications/"*.app "$BUILD_DIR/ipa/Payload/"
-          cd "$BUILD_DIR/ipa"
-          zip -r "$BUILD_DIR/FishEyeStabilizer-unsigned.ipa" Payload/
-          echo "✅ 未签名 IPA: $BUILD_DIR/FishEyeStabilizer-unsigned.ipa"
-          ls -lh "$BUILD_DIR/FishEyeStabilizer-unsigned.ipa"
-
-    artifacts:
-      - build/FishEyeStabilizer-unsigned.ipa
-      - build/FishEyeStabilizer.xcarchive
-
-  # ----------------------------------------------------------
-  # Pull Request 校验
-  # ----------------------------------------------------------
-  pr-check:
-    name: PR Check
-    instance_type: mac_mini_m1
-    max_build_duration: 20
-    environment:
-      xcode: "16.2"
-    triggering:
-      events:
-        - pull_request
     scripts:
       - name: Install XcodeGen & Generate
         script: |
           brew install xcodegen
           xcodegen generate
-      - name: Build check
+      - name: Build unsigned archive
         script: |
-          xcodebuild build \
+          xcodebuild archive \
             -project FishEyeStabilizer.xcodeproj \
             -scheme FishEyeStabilizer \
+            -archivePath "$CM_BUILD_DIR/FishEyeStabilizer.xcarchive" \
             -destination 'generic/platform=iOS' \
-            -configuration Debug \
+            -configuration Release \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            | tee build.log
+            CODE_SIGNING_ALLOWED=NO
+      - name: Export unsigned IPA
+        script: |
+          mkdir -p $CM_BUILD_DIR/Payload
+          cp -R "$CM_BUILD_DIR/FishEyeStabilizer.xcarchive/Products/Applications/"*.app $CM_BUILD_DIR/Payload/
+          cd $CM_BUILD_DIR
+          zip -r FishEyeStabilizer-unsigned.ipa Payload/
+          ls -lh FishEyeStabilizer-unsigned.ipa
+    artifacts:
+      - FishEyeStabilizer-unsigned.ipa
+      - FishEyeStabilizer.xcarchive
