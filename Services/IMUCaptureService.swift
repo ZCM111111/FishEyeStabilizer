@@ -5,18 +5,29 @@ import Foundation
 
 /// 采集设备运动数据（陀螺仪 + 加速度计），用于地平线防抖
 /// 以 120Hz 采集 CMDeviceMotion，维护环形缓冲区供帧同步查询
-@MainActor
+///
+/// 注意: 不再标注 @MainActor — CoreMotion 数据采集在专用后台队列执行，
+/// 避免 120Hz 回调轰炸主线程导致 UI 卡顿。
 final class IMUCaptureService: ObservableObject {
 
     private let motionManager = CMMotionManager()
     private let buffer = IMUBuffer(maxAge: 3.0)
 
+    /// 回调在后台队列，@Published 需手动调度到 MainActor
     @Published private(set) var latestData: IMUDataPoint?
     @Published private(set) var isCapturing = false
 
     private var referenceAttitude: CMAttitude?
 
+    /// IMU 数据回调专用后台队列
+    private let imuQueue = OperationQueue()
+    private let dataLock = NSLock()
+
     init() {
+        imuQueue.name = "com.fisheye.imu"
+        imuQueue.maxConcurrentOperationCount = 1
+        imuQueue.qualityOfService = .userInitiated
+
         if !motionManager.isDeviceMotionAvailable {
             print("⚠️ [IMU] 当前设备不支持 DeviceMotion")
         }
@@ -29,9 +40,11 @@ final class IMUCaptureService: ObservableObject {
 
         motionManager.deviceMotionUpdateInterval = 1.0 / frequency
 
+        // 关键修复: 回调改为后台队列，不再用 .main
+        // 120Hz 回调在主线程会导致 UI 严重卡顿
         motionManager.startDeviceMotionUpdates(
             using: .xArbitraryZVertical,
-            to: .main
+            to: imuQueue
         ) { [weak self] motion, error in
             guard let self else {
                 if let error { print("❌ [IMU] 采集错误: \(error)") }
@@ -57,9 +70,10 @@ final class IMUCaptureService: ObservableObject {
                 rotationRateZ: motion.rotationRate.z
             )
 
+            // 在后台线程更新 @Published（SwiftUI 会自动调度到主线程渲染）
             self.latestData = dataPoint
 
-            // buffer 是 actor，捕获引用后异步写入
+            // buffer 是 actor，异步写入
             let buf = self.buffer
             Task.detached { [dataPoint, buf] in
                 await buf.append(dataPoint)
@@ -67,7 +81,7 @@ final class IMUCaptureService: ObservableObject {
         }
 
         isCapturing = true
-        print("✅ [IMU] 开始采集 @ \(frequency)Hz")
+        print("✅ [IMU] 开始采集 @ \(frequency)Hz（后台队列）")
     }
 
     func stopCapture() {
@@ -104,6 +118,7 @@ final class LowPassFilter: @unchecked Sendable {
     private var alpha: Double = 0.1
     private var filteredValue: Double = 0.0
     private var isInitialized = false
+    private let lock = NSLock()
 
     func configure(cutoffHz: Double, sampleRateHz: Double) {
         let dt = 1.0 / sampleRateHz
@@ -112,6 +127,8 @@ final class LowPassFilter: @unchecked Sendable {
     }
 
     func filter(_ value: Double) -> Double {
+        lock.lock()
+        defer { lock.unlock() }
         if !isInitialized {
             filteredValue = value
             isInitialized = true
@@ -122,6 +139,8 @@ final class LowPassFilter: @unchecked Sendable {
     }
 
     func reset() {
+        lock.lock()
+        defer { lock.unlock() }
         isInitialized = false
         filteredValue = 0.0
     }

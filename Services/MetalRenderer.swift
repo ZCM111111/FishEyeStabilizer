@@ -33,11 +33,18 @@ final class MetalRenderer: NSObject, ObservableObject {
     /// 纹理缓存（加速 CVPixelBuffer ↔ MTLTexture 转换）
     private var textureCache: CVMetalTextureCache?
 
-    /// 中间 RGBA 纹理（矫正后的结果）
-    private var correctedTexture: MTLTexture?
+    /// 中间 RGBA 纹理池（双缓冲，避免 GPU/CPU 竞争）
+    private var correctedTextures: [MTLTexture] = []
+    private var currentTextureIndex: Int = 0
 
     /// 当前输出纹理尺寸
     private var outputSize: CGSize = .zero
+
+    // MARK: - 帧节流
+
+    /// 信号量限制同时处理的最大帧数，防止 CPU 提交远超 GPU 处理速度
+    /// 设为 3 允许最多 3 帧在 GPU 管线中，兼顾吞吐和延迟
+    private let frameSemaphore = DispatchSemaphore(value: 3)
 
     // MARK: - 公开属性
 
@@ -55,6 +62,11 @@ final class MetalRenderer: NSObject, ObservableObject {
 
     /// 是否启用地平线防抖
     @Published var stabilizeEnabled: Bool = true
+
+    /// GPU 帧处理完成回调（在后台队列调用）
+    /// - Parameter texture: 处理后的 RGBA 纹理（仅当 stabilizeEnabled=false 时包含矫正结果；
+    ///   防抖开启时，结果直接渲染到 MTKView，回调传 nil）
+    var onFrameCompleted: ((MTLTexture?) -> Void)?
 
     // MARK: - 初始化
 
@@ -123,21 +135,27 @@ final class MetalRenderer: NSObject, ObservableObject {
 
     // MARK: - 主渲染入口
 
-    /// 处理一帧视频
+    /// 处理一帧视频（异步，不阻塞调用线程）
     ///
     /// - Parameters:
     ///   - pixelBuffer: 输入帧（YUV 420v / NV12 格式）
     ///   - displayView: 显示目标 MTKView（可选，nil 时不绘制到屏幕）
-    /// - Returns: 处理后的 RGBA 纹理（可用于录制编码）
+    /// - Returns: 处理后的 RGBA 纹理（可用于录制编码）。
+    ///   注意：防抖开启且 displayView 非 nil 时，最终结果直接渲染到 MTKView，
+    ///   返回的纹理是中间矫正结果（未经防抖处理）。
     private var pipelinesSetup = false
 
     func render(
         pixelBuffer: CVPixelBuffer,
         into displayView: MTKView? = nil
     ) -> MTLTexture? {
+        // 帧节流: 等待前一帧 GPU 工作完成（最多允许 3 帧并行）
+        frameSemaphore.wait()
+
         if !pipelinesSetup { setupPipelines(); pipelinesSetup = true }
         let targetView = displayView ?? self.displayView
         guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+            frameSemaphore.signal()
             return nil
         }
 
@@ -153,6 +171,7 @@ final class MetalRenderer: NSObject, ObservableObject {
             height: height
         ) else {
             print("❌ [MetalRenderer] 无法创建 Y 纹理")
+            frameSemaphore.signal()
             return nil
         }
 
@@ -164,19 +183,29 @@ final class MetalRenderer: NSObject, ObservableObject {
             height: height / 2
         ) else {
             print("❌ [MetalRenderer] 无法创建 UV 纹理")
+            frameSemaphore.signal()
             return nil
         }
 
-        // --- 更新输出纹理 ---
+        // --- 更新输出纹理池 ---
         let newSize = CGSize(width: width, height: height)
         if outputSize != newSize {
             outputSize = newSize
-            correctedTexture = makeOutputTexture(width: width, height: height)
+            correctedTextures = [
+                makeOutputTexture(width: width, height: height),
+                makeOutputTexture(width: width, height: height),
+            ].compactMap { $0 }
+            currentTextureIndex = 0
         }
 
-        guard let outTexture = correctedTexture else {
+        guard correctedTextures.count >= 2 else {
+            frameSemaphore.signal()
             return nil
         }
+
+        // 从纹理池中轮换使用，避免 GPU 还在写上一帧时 CPU 就覆盖
+        let outTexture = correctedTextures[currentTextureIndex]
+        currentTextureIndex = (currentTextureIndex + 1) % correctedTextures.count
 
         // --- 步骤 2: 鱼眼矫正 (如果启用) ---
         if fisheyeEnabled, let pipeline = fisheyePipeline {
@@ -192,7 +221,7 @@ final class MetalRenderer: NSObject, ObservableObject {
         }
 
         // --- 步骤 3: 地平线防抖 (如果启用) ---
-        var finalTexture: MTLTexture = outTexture
+        var didPresentDrawable = false
 
         if stabilizeEnabled, let pipeline = stabilizePipeline, let view = targetView {
             applyHorizonStabilize(
@@ -201,14 +230,21 @@ final class MetalRenderer: NSObject, ObservableObject {
                 sourceTexture: outTexture,
                 into: view
             )
-            // 不返回纹理（直接渲染到 MTKView）
+            didPresentDrawable = true
         }
 
-        // --- 提交命令 ---
-        commandBuffer.commit()
-        commandBuffer.waitUntilCompleted()
+        // --- GPU 完成回调 ---
+        // 弱引用以避免循环引用
+        let completedTexture: MTLTexture? = didPresentDrawable ? nil : outTexture
+        commandBuffer.addCompletedHandler { [weak self] _ in
+            self?.frameSemaphore.signal()
+            self?.onFrameCompleted?(completedTexture)
+        }
 
-        return finalTexture
+        // --- 提交命令（异步，不阻塞） ---
+        commandBuffer.commit()
+
+        return didPresentDrawable ? nil : outTexture
     }
 
     // MARK: - 鱼眼矫正

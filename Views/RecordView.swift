@@ -48,12 +48,7 @@ struct RecordView: View {
                 fineTuneOverlay
             }
         }
-        .onAppear {
-            viewModel.startCamera()
-        }
-        .onDisappear {
-            viewModel.stopCamera()
-        }
+        // 相机生命周期由 RecordTab 统一管理，此处不再重复调用 startCamera/stopCamera
         .sheet(isPresented: $showPresetSheet) {
             PresetPickerView(
                 presets: viewModel.lensPresetService.allPresets,

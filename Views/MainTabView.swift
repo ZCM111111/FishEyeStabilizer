@@ -83,9 +83,12 @@ private struct LibraryTab: View {
     }
 }
 
+/// 设置 Tab — 仅创建所需的最小依赖（LensPresetService），
+/// 不再创建完整的 CameraViewModel（避免重复的 AVCaptureSession、CMMotionManager、Metal 设备等）
 private struct SettingsTab: View {
-    @StateObject private var vm = CameraViewModel()
+    @StateObject private var lensPresetService = LensPresetService()
+
     var body: some View {
-        SettingsView(cameraVM: vm)
+        SettingsView(lensPresetService: lensPresetService)
     }
 }

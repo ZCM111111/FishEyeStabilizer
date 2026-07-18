@@ -11,7 +11,8 @@ import SwiftUI
 ///
 struct SettingsView: View {
 
-    @ObservedObject var cameraVM: CameraViewModel
+    /// 镜头预设服务（由父视图注入，不创建完整 CameraViewModel 以避免重复硬件资源）
+    @ObservedObject var lensPresetService: LensPresetService
 
     // MARK: - 状态
 
@@ -64,7 +65,7 @@ struct SettingsView: View {
 
                     // 用户自定义预设数量
                     Label(
-                        "用户预设: \(cameraVM.lensPresetService.userPresets.count) 个",
+                        "用户预设: \(lensPresetService.userPresets.count) 个",
                         systemImage: "person.crop.rectangle.stack"
                     )
                 } header: {
@@ -112,15 +113,13 @@ struct SettingsView: View {
             .sheet(isPresented: $showCalibration) {
                 CalibrationView(
                     onComplete: { preset in
-                        cameraVM.lensPresetService.addUserPreset(preset)
+                        lensPresetService.addUserPreset(preset)
                     },
                     detector: AutoDetector(
-                        presetService: cameraVM.lensPresetService
+                        presetService: lensPresetService
                     )
                 )
             }
         }
     }
 }
-
-// Preview omitted
