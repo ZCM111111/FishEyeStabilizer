@@ -20,7 +20,6 @@ import Combine
 /// // 在 delegate 回调中接收帧
 /// camera.stopSession()
 /// ```
-@MainActor
 final class CameraManager: NSObject, ObservableObject {
 
     // MARK: - 公开属性
@@ -48,12 +47,6 @@ final class CameraManager: NSObject, ObservableObject {
 
     /// 目标帧率
     var targetFrameRate: Int32 = 60
-
-    /// 相机处理用的串行队列
-    private let cameraQueue = DispatchQueue(
-        label: "com.fisheye.camera",
-        qos: .userInteractive
-    )
 
     /// 用于 Combine 的内存管理
     private var cancellables = Set<AnyCancellable>()
@@ -113,7 +106,7 @@ final class CameraManager: NSObject, ObservableObject {
                     kCVPixelFormatType_420YpCbCr8BiPlanarFullRange // NV12 格式
             ]
             videoOutput.alwaysDiscardsLateVideoFrames = true
-            videoOutput.setSampleBufferDelegate(self, queue: cameraQueue)
+            videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue.main)
         }
 
         session.commitConfiguration()
@@ -187,33 +180,23 @@ final class CameraManager: NSObject, ObservableObject {
 
     // MARK: - 会话控制
 
-    /// 启动相机会话（异步，在后台队列执行）
+    /// 启动相机会话
     func startSession() {
         guard !session.isRunning else {
             print("⚠️ [CameraManager] 会话已在运行")
             return
         }
-
-        cameraQueue.async { [weak self] in
-            self?.session.startRunning()
-            DispatchQueue.main.async {
-                self?.isSessionRunning = true
-            }
-            print("✅ [CameraManager] 会话已启动")
-        }
+        session.startRunning()
+        isSessionRunning = session.isRunning
+        print("✅ [CameraManager] 会话已启动")
     }
 
     /// 停止相机会话
     func stopSession() {
         guard session.isRunning else { return }
-
-        cameraQueue.async { [weak self] in
-            self?.session.stopRunning()
-            DispatchQueue.main.async {
-                self?.isSessionRunning = false
-            }
-            print("⏸ [CameraManager] 会话已停止")
-        }
+        session.stopRunning()
+        isSessionRunning = session.isRunning
+        print("⏸ [CameraManager] 会话已停止")
     }
 
     /// 切换前后摄像头

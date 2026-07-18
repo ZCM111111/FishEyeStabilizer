@@ -254,7 +254,6 @@ final class AutoDetector: ObservableObject {
         var segments: [LineSegment] = []
 
         let request = VNDetectContoursRequest()
-        request.contrastAdjustment = 1.0
         request.detectsDarkOnLight = true
         request.maximumImageDimension = 1024
 
