@@ -26,7 +26,6 @@ targets:
     sources:
       # Swift 源文件（按目录添加，避免 XcodeGen 产生重复 group 引用）
       - path: FishEyeStabilizerApp.swift
-      - path: CabinetLock.swift
       - path: Models
         type: group
       - path: Views
