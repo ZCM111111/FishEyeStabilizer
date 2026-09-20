@@ -9,6 +9,18 @@
 #include "Common.metal"
 using namespace metal;
 
+// MARK: - 实时锁定参数
+//
+// The cabinet lock works in source-pixel space: `center` is the tracked target
+// centre (normalized 0-1) and `zoom` keeps its size constant. Applying it after
+// the undistortion is a pure crop of the corrected image, which is what pins
+// the cabinet to the middle of the output however the camera moves.
+struct LockParams {
+    float2 center;    // target centre, normalized source coordinates
+    float  zoom;      // crop zoom; 1.0 keeps the full field of view
+    float  enabled;   // 0 or 1
+};
+
 // MARK: - YUV→RGB 转换 + 矫正（用于相机实时预览）
 
 /// 将 YUV 420v (NV12) 双平面纹理矫正为 RGBA 纹理
@@ -31,6 +43,8 @@ kernel void fisheyeCorrectYUVtoRGBA(
     texture2d<float, access::write>  outTexture  [[texture(2)]],
     // 畸变参数
     constant float* distortionParams             [[buffer(0)]],
+    // 实时锁定（机台居中）
+    constant LockParams& lock                    [[buffer(1)]],
     // 线程在 2D grid 中的位置
     uint2 gid [[thread_position_in_grid]]
 ) {
@@ -54,6 +68,11 @@ kernel void fisheyeCorrectYUVtoRGBA(
 
     // --- 逆向畸变: 输出坐标 -> 畸变源坐标 ---
     float2 distortedUV = undistortCoordinate(outputUV, params);
+
+    // --- 实时锁定: 把跟踪到的机台中心搬到画面正中 ---
+    if (lock.enabled > 0.5) {
+        distortedUV = (distortedUV - lock.center) * lock.zoom + float2(0.5, 0.5);
+    }
 
     // --- 从 Y+UV 纹理采样 ---
     constexpr sampler s(address::clamp_to_edge, filter::linear);

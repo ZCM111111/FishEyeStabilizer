@@ -1,5 +1,6 @@
 import MetalKit
 import CoreVideo
+import simd
 
 // MARK: - Metal 渲染器
 
@@ -63,6 +64,34 @@ final class MetalRenderer: NSObject, ObservableObject {
     /// 是否启用地平线防抖
     @Published var stabilizeEnabled: Bool = true
 
+    // MARK: - 实时锁定（机台居中）
+
+    /// 机台中心（归一化源坐标）与裁切缩放。由 CabinetLock 每帧更新。
+    private let lockStateLock = NSLock()
+    private var lockCenter = SIMD2<Float>(0.5, 0.5)
+    private var lockZoom: Float = 1
+    private var lockEnabled = false
+
+    /// center 为 nil 时关闭锁定，画面回到原来的防抖行为。
+    func setCropLock(center: SIMD2<Float>?, zoom: Float) {
+        lockStateLock.lock()
+        if let center {
+            lockCenter = center
+            lockZoom = min(max(zoom, 0.6), 2.4)
+            lockEnabled = true
+        } else {
+            lockEnabled = false
+        }
+        lockStateLock.unlock()
+    }
+
+    private func currentCropLock() -> CropLockParams {
+        lockStateLock.lock()
+        defer { lockStateLock.unlock() }
+        return CropLockParams(center: lockCenter,
+                              zoom: lockZoom,
+                              enabled: lockEnabled ? 1 : 0)
+    }
     /// GPU 帧处理完成回调（在后台队列调用）
     /// - Parameter texture: 处理后的 RGBA 纹理（仅当 stabilizeEnabled=false 时包含矫正结果；
     ///   防抖开启时，结果直接渲染到 MTKView，回调传 nil）
@@ -296,6 +325,10 @@ final class MetalRenderer: NSObject, ObservableObject {
         var metalParams = params.metalArray
         encoder.setBytes(&metalParams, length: MemoryLayout<Float>.size * 6, index: 0)
 
+        // 实时锁定参数（机台居中）
+        var lockParams = currentCropLock()
+        encoder.setBytes(&lockParams, length: MemoryLayout<CropLockParams>.stride, index: 1)
+
         // 计算线程组大小
         let threadGroupSize = MTLSize(width: 16, height: 16, depth: 1)
         let threadGroups = MTLSize(
@@ -402,4 +435,10 @@ struct StabilizeParams {
 
     /// 零值（无防抖）
     static let zero = StabilizeParams()
+}
+/// 与 FisheyeCorrection.metal 的 LockParams 保持相同内存布局。
+struct CropLockParams {
+    var center = SIMD2<Float>(0.5, 0.5)
+    var zoom: Float = 1
+    var enabled: Float = 0
 }

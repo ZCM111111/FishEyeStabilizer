@@ -27,7 +27,7 @@ final class CameraViewModel: ObservableObject {
     let imuService = IMUCaptureService()
     let renderer = MetalRenderer()
     let lensPresetService = LensPresetService()
-    private let twoBoundaryServo = TwoBoundaryServo()
+    private let cabinetLock = CabinetLock()
     @Published private(set) var cabinetStatus = "搜索双边界"
     @Published private(set) var cabinetGapSpread: Float = 1
 
@@ -79,18 +79,43 @@ final class CameraViewModel: ObservableObject {
 
     private var cancellables = Set<AnyCancellable>()
 
+    /// 机台内屏半径占输出短边的比例，锁定后保持不变。
+    var cabinetFillFraction: Float = 0.34
+
+    /// 最近一帧的采集尺寸，用于把像素坐标归一化。
+    private var lastFrameSize = CGSize.zero
+
     // MARK: - 初始化
 
     init() {
-        twoBoundaryServo.onResult = { [weak self] result in
+        cabinetLock.onTarget = { [weak self] target in
             Task { @MainActor [weak self] in
-                guard let self else { return }
-                self.cabinetGapSpread = result.gapSpread
-                self.cabinetStatus = result.summary
+                self?.consumeCabinetTarget(target)
             }
         }
         setupDelegates()
         setupFrameCompletionHandler()
+    }
+
+    /// 把逐帧跟踪结果换算成"归一化锁定中心 + 保持大小恒定的缩放"。
+    private func consumeCabinetTarget(_ target: CabinetLock.Target) {
+        guard target.valid else {
+            renderer.setCropLock(center: nil, zoom: 1)
+            cabinetStatus = "搜索机台"
+            cabinetGapSpread = 0
+            return
+        }
+        let size = lastFrameSize
+        guard size.width > 1, size.height > 1 else { return }
+        let center = SIMD2<Float>(Float(target.center.x / size.width),
+                                  Float(target.center.y / size.height))
+        let shortSide = Float(min(size.width, size.height))
+        let desired = cabinetFillFraction * shortSide
+        let zoom = min(max(desired / max(Float(target.radius), 1), 0.6), 1.0)
+        renderer.setCropLock(center: center, zoom: zoom)
+        cabinetStatus = String(format: "机台锁定 · r=%.0fpx · zoom=%.2f",
+                               Double(target.radius), Double(zoom))
+        cabinetGapSpread = target.confidence
     }
 
     private func setupDelegates() {
@@ -110,14 +135,14 @@ final class CameraViewModel: ObservableObject {
 
     /// 启动相机预览
     func startCamera() {
-        twoBoundaryServo.setEnabled(true)
+        cabinetLock.setEnabled(true)
         cameraManager.startSession()
         imuService.startCapture(frequency: 120.0)
     }
 
     /// 停止相机预览
     func stopCamera() {
-        twoBoundaryServo.setEnabled(false)
+        cabinetLock.setEnabled(false)
         cameraManager.stopSession()
         imuService.stopCapture()
         if isRecording {
@@ -261,8 +286,10 @@ extension CameraViewModel: @preconcurrency CameraFrameDelegate {
         didOutputPixelBuffer pixelBuffer: CVPixelBuffer,
         timestamp: CMTime
     ) {
-        twoBoundaryServo.submit(pixelBuffer: pixelBuffer,
-                                timestamp: timestamp.seconds)
+        lastFrameSize = CGSize(width: CVPixelBufferGetWidth(pixelBuffer),
+                               height: CVPixelBufferGetHeight(pixelBuffer))
+        cabinetLock.submit(pixelBuffer: pixelBuffer,
+                           timestamp: timestamp.seconds)
 
         // Metal 渲染提交（异步，立即返回 — 不再阻塞）
         renderer.render(pixelBuffer: pixelBuffer, into: nil)
