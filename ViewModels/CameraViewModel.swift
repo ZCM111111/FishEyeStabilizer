@@ -27,6 +27,9 @@ final class CameraViewModel: ObservableObject {
     let imuService = IMUCaptureService()
     let renderer = MetalRenderer()
     let lensPresetService = LensPresetService()
+    private let twoBoundaryServo = TwoBoundaryServo()
+    @Published private(set) var cabinetStatus = "搜索双边界"
+    @Published private(set) var cabinetGapSpread: Float = 1
 
     lazy var fisheyeCorrector = FisheyeCorrector(renderer: renderer)
     lazy var horizonStabilizer = HorizonStabilizer(
@@ -79,6 +82,13 @@ final class CameraViewModel: ObservableObject {
     // MARK: - 初始化
 
     init() {
+        twoBoundaryServo.onResult = { [weak self] result in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.cabinetGapSpread = result.gapSpread
+                self.cabinetStatus = result.summary
+            }
+        }
         setupDelegates()
         setupFrameCompletionHandler()
     }
@@ -100,12 +110,14 @@ final class CameraViewModel: ObservableObject {
 
     /// 启动相机预览
     func startCamera() {
+        twoBoundaryServo.setEnabled(true)
         cameraManager.startSession()
         imuService.startCapture(frequency: 120.0)
     }
 
     /// 停止相机预览
     func stopCamera() {
+        twoBoundaryServo.setEnabled(false)
         cameraManager.stopSession()
         imuService.stopCapture()
         if isRecording {
@@ -249,6 +261,9 @@ extension CameraViewModel: @preconcurrency CameraFrameDelegate {
         didOutputPixelBuffer pixelBuffer: CVPixelBuffer,
         timestamp: CMTime
     ) {
+        twoBoundaryServo.submit(pixelBuffer: pixelBuffer,
+                                timestamp: timestamp.seconds)
+
         // Metal 渲染提交（异步，立即返回 — 不再阻塞）
         renderer.render(pixelBuffer: pixelBuffer, into: nil)
 
